@@ -15,15 +15,17 @@ function onLoad()
 	api.recognize
 	(
 		img,
+		function(response, error)
 		{
-			load: function(event)
+			if(error)
 			{
-				console.log("load", event);
-			},
-			error: function(event)
-			{
-				console.log("error", event);
+				console.log("error", error);
 			}
+			else
+			{
+				console.log("response", response);
+			}
+
 		}
 	);
 }

@@ -5,7 +5,10 @@
   "main": "server.js",
   "dependencies": {
     "body-parser": "^1.18.2",
-    "express": "^4.16.3"
+    "child_process": "^1.0.2",
+    "express": "^4.16.3",
+    "node-tesseract": "^0.2.7",
+    "tesseract.js": "^1.0.10"
   },
   "devDependencies": {},
   "scripts": {

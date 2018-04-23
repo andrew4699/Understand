@@ -15,7 +15,7 @@ class UnderstandAPI
 		this.__sendRequest("recognize", {image}, listeners);
 	}
 
-	__sendRequest(type, data, listeners)
+	__sendRequest(type, data, finished)
 	{
 		// Prepare request
 		let req = new XMLHttpRequest();
@@ -23,28 +23,41 @@ class UnderstandAPI
 		req.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
 
 		// Bind events
-		for(let i = 0; i < REQUEST_EVENTS.length; i++)
-		{
-			let event = REQUEST_EVENTS[i];
-			
-			if(event in listeners)
-			{
-				req.addEventListener(event, listeners[event]);
-			}
-		}
-
-		/*if("error" in listeners)
-		{
-			req.addEventListener("error", listeners.error);
-		}
-
-		if("success" in listeners)
+		if(typeof finished !== "undefined")
 		{
 			req.addEventListener("load", function(event)
 			{
-				listeners.success(req.response);
+				let data;
+				
+				try
+				{
+					data = JSON.parse(req.response);
+				}
+				catch(ex)
+				{
+					try
+					{
+						data = JSON.parse(req.responseText);
+					}
+					catch(ex2)
+					{
+						data = req.response;
+					}
+				}
+
+				if(req.status === 404)
+				{
+					finished(null, req.status + " - " + req.statusText);
+				}
+				else
+				{
+					finished(data);
+				}
 			});
-		}*/
+
+			req.addEventListener("abort", () => console.log("ab"));
+			req.addEventListener("err", () => console.log("er"));
+		}
 
 		// Send data
 		let postData =
