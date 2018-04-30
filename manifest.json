@@ -10,14 +10,22 @@
 		"default_popup": "understand.html"
 	},
 
+	"background":
+	{
+		"scripts": ["js/background.js"],
+		"persistent": false
+	},
+
 	"content_scripts":
 	[
 		{
 			"js":
 			[
-				"js/api.js",
+				"js/structures/Zone.js",
+				"js/structures/Base64Image.js",
+				"js/structures/UnderstandAPI.js",
 				"js/utils.js",
-				"js/background.js"
+				"js/pdfscript.js"
 			],
 			"matches": ["<all_urls>"]
 		}
@@ -25,7 +33,9 @@
 
 	"permissions":
 	[
+		"tabs",
 		"activeTab",
-    	"http://localhost/"
+    	"http://localhost/",
+    	"<all_urls>"
 	]
 }

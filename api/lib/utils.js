@@ -1,10 +1,27 @@
+const fs = require("fs");
+
 let utils =
 {
-	toImageLike: function(obj)
+	toImageFile: function(obj, finished)
 	{
 		if(typeof obj === "string")
 		{
-			return Buffer.from(obj, "base64");
+			if(obj.indexOf("data:image") > -1)
+			{
+				let fileData = obj.replace(/^data:image\/jpeg;base64,/, ""),
+					filePath = "./out.jpeg";
+
+				fs.writeFile(filePath, fileData, "base64", finished);
+
+				return filePath;
+			}
+			else return obj;
+		}
+		else
+		{
+			console.log("Invalid image object");
+			console.log(obj);
+			return null;
 		}
 	}
 };

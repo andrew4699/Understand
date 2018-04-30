@@ -1,40 +1,39 @@
-/*const Tesseract = require("tesseract.js");
-const {toImageLike} = require("../lib/utils");*/
-const {exec} = require("child_process");
+const {toImageFile} = require("../lib/utils");
 const tesseract = require("node-tesseract");
 
 module.exports = function(req, res)
 {
-	console.log(req.body);
+	//console.log(req.body);
 	
-	//let img = toImageLike(req.body.image);
-
-	/*Tesseract.recognize("./long.jpg")
-	.progress(message => console.log(message))
-	.then(function(result)
+	let imgPath = toImageFile(req.body.image, function(error)
 	{
-		console.log("## done");
-		//console.log(result);
-	});*/
-
-	/*exec("tesseract ...", (error, stdout, stderr)
-	{
-		if(err)
+		if(error)
 		{
-			console.log(err);
+			console.log("error");
+			console.log(error);
+			return;
 		}
-		else
-		{
-			console.log("stdout", stdout);
-		}
-	});*/
 
-	tesseract.process("./long.jpg", function(err, text)
-	{
-		if(err)
-			console.log(err);
-		else
-			console.log(text);
+		//console.log("path || " + imgPath);
+
+		console.log("Processing image...");
+
+		tesseract.process(imgPath, function(err, text)
+		{
+			if(err)
+			{
+				console.log("error: " + err);
+				res.status(400)
+				res.send(err);
+			}
+			else
+			{
+				console.log(text);
+
+				let data = {text};
+				res.json(data);
+			}
+		});
 	});
 
 	//res.json(req.body);
