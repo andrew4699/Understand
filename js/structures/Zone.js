@@ -1,3 +1,5 @@
+"use strict";
+
 const DOM_ELEMENT_TYPE = "div";
 
 class Zone

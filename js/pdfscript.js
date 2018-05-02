@@ -1,3 +1,5 @@
+"use strict";
+
 const SPLIT_ROWS = 5;
 const SPLIT_COLS = 5;
 
@@ -30,19 +32,21 @@ function scanPage()
 	takeScreenshot(function(img)
 	{
 		let zones = Zone.createFromArea(window.innerWidth, window.innerHeight, SPLIT_ROWS, SPLIT_COLS);
-		/*console.log(zones);
+		//console.log(zones);
 
 		for(let i = 0; i < zones.length; i++)
 		{
-			zones[i].setVisible(false);
-		}*/
+			//zones[i].setVisible(true);
+		}
 
-		let parts = img.splitIntoZones(zones, window.innerWidth, window.innerHeight);
-		console.log(parts);
+		img.splitIntoZones(zones, window.innerWidth, window.innerHeight, function(parts)
+		{
+			api.recognize(parts, function())
+		});
 	});
 }
 
 /* ============================
 		BEGIN THE MADNESS
    ============================ */
-onLoad();
+setTimeout(onLoad, 2000);

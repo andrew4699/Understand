@@ -1,6 +1,6 @@
-const DEFAULT_API_URL = "http://localhost:4444";
+"use strict";
 
-const REQUEST_EVENTS = ["progress", "load", "error", "abort"];
+const DEFAULT_API_URL = "http://localhost:4444";
 
 class UnderstandAPI
 {
@@ -10,9 +10,24 @@ class UnderstandAPI
 		this.__apiURL = DEFAULT_API_URL;
 	}
 
-	recognize(image, listeners)
+	/*
+		images is expected to be an array of base64 strings, ex:
+		
+			["data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKud=", "data:image/gif;base64,ASND0ASLDKNAKLSQAAORHHOVSKud="]
+
+		finished is expected to be a function(response, error), ex:
+
+			function(response, error)
+			{
+				if(error) throw error;
+
+				....
+			}
+	*/
+	recognize(images, finished)
 	{
-		this.__sendRequest("recognize", {image}, listeners);
+		images = toArray(images);
+		this.__sendRequest("recognize", {images}, finished);
 	}
 
 	__sendRequest(type, data, finished)
