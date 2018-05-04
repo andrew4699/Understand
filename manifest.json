@@ -21,6 +21,8 @@
 		{
 			"js":
 			[
+				"js/structures/VisibleElement.js",
+				"js/structures/Pixel.js",
 				"js/structures/Zone.js",
 				"js/structures/Base64Image.js",
 				"js/structures/UnderstandAPI.js",

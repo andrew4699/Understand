@@ -1,11 +1,11 @@
 "use strict";
 
-const DOM_ELEMENT_TYPE = "div";
-
-class Zone
+class Zone extends VisibleElement
 {
 	constructor(x, y, width, height)
 	{
+		super("div", "flex");
+		
 		this.x = x;
 		this.y = y;
 		this.width = width;
@@ -13,37 +13,6 @@ class Zone
 
 		this.__internalID = Zone.__nextInternalID;
 		Zone.__nextInternalID++;
-	}
-
-	setVisible(visible)
-	{
-		if(this.__domElement)
-		{
-			let display = visible ? "flex" : "none";
-			this.__domElement.style.display = display;
-		}
-		else
-		{
-			this.__createDOMElement();
-			this.setVisible(visible);
-		}
-	}
-
-	__createDOMElement()
-	{
-		this.__domElement = document.createElement(DOM_ELEMENT_TYPE);
-
-		let textNode = document.createTextNode(this.__internalID);
-		this.__domElement.appendChild(textNode);
-
-		let style = this.__getDOMElementStyle();
-
-		for(let attr in style)
-		{
-			this.__domElement.style[attr] = style[attr];
-		}
-
-		document.body.appendChild(this.__domElement);
 	}
 
 	__getDOMElementStyle()

@@ -31,17 +31,24 @@ function scanPage()
 {
 	takeScreenshot(function(img)
 	{
-		let zones = Zone.createFromArea(window.innerWidth, window.innerHeight, SPLIT_ROWS, SPLIT_COLS);
-		//console.log(zones);
-
-		for(let i = 0; i < zones.length; i++)
+		img.scaleTo(window.innerWidth, window.innerHeight);
+		
+		img.getPDFBounds(function(leftX, rightX)
 		{
-			//zones[i].setVisible(true);
-		}
+			console.log(leftX, rightX);
 
-		img.splitIntoZones(zones, window.innerWidth, window.innerHeight, function(parts)
-		{
-			api.recognize(parts, function())
+			let zones = Zone.createFromArea(window.innerWidth, window.innerHeight, SPLIT_ROWS, SPLIT_COLS);
+			//console.log(zones);
+
+			for(let i = 0; i < zones.length; i++)
+			{
+				//zones[i].setVisible(true);
+			}
+
+			/*img.splitIntoZones(zones, window.innerWidth, window.innerHeight, function(parts)
+			{
+				api.recognize(parts, function())
+			});*/
 		});
 	});
 }
