@@ -2,87 +2,94 @@
 
 class Base64Image
 {
-	constructor(data)
+	constructor(data, onProcessed)
 	{
 		this.__data = data; // base64 with header included (data:base64,image/jpeg;+asidnflansln)
+		this.__createDOMElement(onProcessed);
 	}
 
-	getInfo(finished)
+	getData()
 	{
-		if(this.__domElement)
-		{
-			if(typeof finished !== "undefined")
-			{
-				finished(this.__domElementMeta);
-			}
+		return this.__data;
+	}
 
-			return this.__domElementMeta;
-		}
-		else
+	hasBeenProcessed()
+	{
+		return typeof this.width !== "undefined" && typeof this.height !== "undefined";
+	}
+
+	__ensureProcessed()
+	{
+		if(!this.hasBeenProcessed())
 		{
-			this.__createDOMElement(() =>
-			{
-				this.getInfo(finished)
-			});
-			
+			throw "__ensureProcessed failed";
 		}
 	}
 
-	splitIntoZones(zones, width, height, finished)
+	/*
+		Splits this image into zones and pipes them along with their zones
+
+		When createInstances is false, the images will be returned as a base64 string
+			When true, they will be returned as Base64Image objects
+
+		pipe is expected to be a function(image, zone)
+	*/
+	splitIntoZones(zones, createInstances, pipe)
 	{
 		if(zones.length === 0)
 		{
 			throw "Zones was empty when splitting Base64Image into zones";
 		}
 
-		if(this.__domElement)
-		{
-			let parts = [];
-
-			let canvas = document.createElement("canvas");
-			canvas.width = zones[0].width;
-			canvas.height = zones[0].height;
-
-			document.body.appendChild(canvas);
-
-			let ctx = canvas.getContext("2d");
-
-			for(let i = 0; i < zones.length; i++)
-			{
-				let clipData = this.__getImageClipData(zones[i], width, height);
-				ctx.drawImage(this.__domElement, clipData.x, clipData.y, clipData.width, clipData.height, 0, 0, canvas.width, canvas.height);
-				parts.push(canvas.toDataURL());
-			}
-
-			finished(parts);
-			return parts;
-		}
-		else
-		{
-			this.__createDOMElement(() =>
-			{
-				this.splitIntoZones(zones, width, height, finished);
-			});
-		}
-	}
-
-	scaleTo(width, height)
-	{
-		/* 
-			TODO: HAVE .onProcessed AND getInfo IN THE CONSTRUCTOR
-		alfnalkdsnfasasfd
-		adsfknaksldfna
-		adskfnalsdnfk
-		asdlkfnasldnf
-		adskfnlasdlf
-		*/
-
 		let canvas = document.createElement("canvas");
-		canvas.width = width;
-		canvas.height = height;
+		canvas.width = zones[0].width;
+		canvas.height = zones[0].height;
 
 		let ctx = canvas.getContext("2d");
-		ctx.drawImage(this.__domElement)
+
+		for(let i = 0; i < zones.length; i++)
+		{
+			let clipData = this.__getImageClipData(zones[i], this.width, this.height);
+			ctx.drawImage(this.__domElement, clipData.x, clipData.y, clipData.width, clipData.height, 0, 0, canvas.width, canvas.height);
+
+			if(createInstances)
+			{
+				new Base64Image(canvas.toDataURL(), function(img)
+				{
+					pipe(img, zones[i]);
+				});
+			}
+			else
+			{
+				pipe(canvas.toDataURL(), zones[i]);
+			}
+
+			// DEBUGGING PURPOSES
+			//break;
+		}
+
+		canvas.remove();
+		//finished(parts);
+	}
+
+	scaleTo(tarWidth, tarHeight, finished)
+	{
+		this.__ensureProcessed();
+
+		let canvas = document.createElement("canvas");
+		canvas.width = tarWidth;
+		canvas.height = tarHeight;
+
+		let ctx = canvas.getContext("2d");
+		ctx.drawImage(this.__domElement, 0, 0, tarWidth, tarHeight);
+		this.__data = canvas.toDataURL();
+		canvas.remove();
+
+		this.__domElement.src = this.__data;
+		this.__domElement.onload = finished;
+
+		this.width = tarWidth;
+		this.height = tarHeight;
 	}
 
 	/*
@@ -92,51 +99,44 @@ class Base64Image
 	*/
 	getPDFBounds(finished)
 	{
-		this.getInfo((info) =>
+		this.__ensureProcessed();
+
+		let canvas = document.createElement("canvas");
+		canvas.width = this.width;
+		canvas.height = this.height;
+
+		let ctx = canvas.getContext("2d");
+		ctx.drawImage(this.__domElement, 0, 0, canvas.width, canvas.height);
+
+		let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+		canvas.remove();
+
+		let opts =
 		{
-			if(!this.__domElement)
+			xSpacing: 10,
+			ySpacing: 50,
+			startX: 20,
+			startY: 200,
+			maxX: imgData.width - 30,
+			maxY: imgData.height - 30,
+		};
+
+		let lastPixel;
+
+		Pixel.pipeImageData(imgData, (pixel) =>
+		{
+			if(typeof lastPixel !== "undefined" && !pixel.colorEquals(lastPixel))
 			{
-				throw "__domElement was undefined when trying to get PDF bounds";
+				this.__onFoundPDFLeftBound(imgData, pixel, finished);
+				return false;
 			}
 
-			let canvas = document.createElement("canvas");
-			canvas.width = info.width;
-			canvas.height = info.height;
-
-			let ctx = canvas.getContext("2d");
-			ctx.drawImage(this.__domElement, 0, 0);
-
-			let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-			
-			let opts =
-			{
-				xSpacing: 10,
-				ySpacing: 50,
-				startX: 20,
-				startY: 200,
-				maxX: imgData.width - 30,
-				maxY: imgData.height - 30,
-			};
-
-			let lastPixel;
-
-			Pixel.pipeImageData(imgData, (pixel) =>
-			{
-				if(typeof lastPixel !== "undefined" && !pixel.colorEquals(lastPixel))
-				{
-					this.__onFoundPDFLeftBound(imgData, pixel, finished);
-					return false;
-				}
-
-				lastPixel = pixel;
-			}, opts);
-		});
+			lastPixel = pixel;
+		}, opts);
 	}
 
 	__onFoundPDFLeftBound(imgData, left, finished)
 	{
-		console.log(left);
-
 		let opts =
 		{
 			xSpacing: -10,
@@ -163,17 +163,12 @@ class Base64Image
 
 	__onFoundPDFRightBound(left, right, finished)
 	{
-		/*console.log(left, right);
+		left.setVisible(true);
+		left.setVisibleSize(10);
 
-		let info = this.getInfo();
+		right.setVisible(true);
+		right.setVisibleSize(10);
 
-		let sPixel = left.scale(info.width, info.height, window.innerWidth, window.innerHeight);
-		let s2Pixel = right.scale(info.width, info.height, window.innerWidth, window.innerHeight);
-		sPixel.setVisible(true);
-		sPixel.setVisibleSize(10);
-
-		s2Pixel.setVisible(true);
-		s2Pixel.setVisibleSize(10);*/
 		finished(left.x, right.x);
 	}
 
@@ -186,36 +181,35 @@ class Base64Image
 	*/
 	__getImageClipData(zone, desiredWidth, desiredHeight)
 	{
-		if(!this.__domElement)
-		{
-			throw "__getImageClipData requires __domElement to be created";
-		}
+		this.__ensureProcessed();
 
 		let propX = zone.x / desiredWidth,
 			propY = zone.y / desiredHeight;
 
 		return {
-			x: this.__domElementMeta.width * propX,
-			y: this.__domElementMeta.height * propY,
-			width: zone.width * (this.__domElementMeta.width / desiredWidth),
-			height: zone.height * (this.__domElementMeta.height / desiredHeight),
+			x: this.width * propX,
+			y: this.height * propY,
+			width: zone.width * (this.width / desiredWidth),
+			height: zone.height * (this.height / desiredHeight),
 		};
 	}
 
 	__createDOMElement(finished)
 	{
+		if(typeof finished === "undefined")
+		{
+			throw "__createDOMElement requires a finished callback";
+		}
+
 		this.__domElement = new Image();
 		this.__domElement.src = this.__data;
 
 		this.__domElement.onload = () =>
 		{
-			this.__domElementMeta =
-			{
-				width: this.__domElement.width,
-				height: this.__domElement.height,
-			};
+			this.width = this.__domElement.width;
+			this.height = this.__domElement.height;
 
-			finished();
+			finished(this);
 		};
 	}
 }

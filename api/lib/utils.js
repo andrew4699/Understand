@@ -2,27 +2,37 @@ const fs = require("fs");
 
 let utils =
 {
-	toImageFile: function(obj, finished)
+	toImageFile: function(img, finished)
 	{
-		if(typeof obj === "string")
+		if(typeof img === "string")
 		{
-			if(obj.indexOf("data:image") > -1)
+			if(img.indexOf("data:image") > -1)
 			{
-				let fileData = obj.replace(/^data:image\/jpeg;base64,/, ""),
-					filePath = "./out.jpeg";
+				let rand = Math.floor(Math.random() * 500);
+				let fileData = img.replace(/^data:image\/png;base64,/, ""),
+					filePath = "./images/out" + rand + ".png";
 
-				fs.writeFile(filePath, fileData, "base64", finished);
-
-				return filePath;
+				fs.writeFile(filePath, fileData, "base64", function(error)
+				{
+					finished(filePath, error);
+				});
 			}
-			else return obj;
+			else
+			{
+				finished(img);
+			}
 		}
 		else
 		{
-			console.log("Invalid image object");
-			console.log(obj);
-			return null;
+			let err = "Invalid image (typeof " + (typeof img) + ")";
+			console.log(err);
+			console.log(img);
+			finished(img, err);
 		}
+	},
+	autoCorrect: function(text, dictionary)
+	{
+		/* do this */
 	}
 };
 

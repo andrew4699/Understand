@@ -1,7 +1,7 @@
 "use strict";
 
-const SPLIT_ROWS = 5;
-const SPLIT_COLS = 5;
+const SPLIT_ROWS = 3;
+const SPLIT_COLS = 1;
 
 let api;
 
@@ -11,10 +11,9 @@ function onLoad()
 		return;
 
 	api = new UnderstandAPI("THIS IS A TEST KEY MAKE SURE TO CHANGE IT");
-	console.log("load");
+	api.onconnect = scanPage;
 	
 	bindEvents();
-	scanPage();
 }
 
 function bindEvents()
@@ -27,28 +26,39 @@ function onResize(event)
 	console.log("resize", event);
 }
 
+function pipeImagePart(image, zone)
+{
+	console.log(image);
+
+	image.scaleTo(image.width * 4, image.height * 4, function()
+	{
+		api.recognize(image.getData(), function(response)
+		{
+			console.log(response);
+			zone.setVisible(true);
+		});
+	});
+}
+
 function scanPage()
 {
 	takeScreenshot(function(img)
 	{
-		img.scaleTo(window.innerWidth, window.innerHeight);
-		
-		img.getPDFBounds(function(leftX, rightX)
+		img.scaleTo(window.innerWidth, window.innerHeight, function()
 		{
-			console.log(leftX, rightX);
-
-			let zones = Zone.createFromArea(window.innerWidth, window.innerHeight, SPLIT_ROWS, SPLIT_COLS);
-			//console.log(zones);
-
-			for(let i = 0; i < zones.length; i++)
+			img.getPDFBounds(function(leftX, rightX)
 			{
-				//zones[i].setVisible(true);
-			}
+				console.log(leftX, rightX);
 
-			/*img.splitIntoZones(zones, window.innerWidth, window.innerHeight, function(parts)
-			{
-				api.recognize(parts, function())
-			});*/
+				let zones = Zone.createFromArea(leftX, 0, rightX, window.innerHeight, SPLIT_ROWS, SPLIT_COLS);
+
+				for(let i = 0; i < zones.length; i++)
+				{
+					//zones[i].setVisible(true);
+				}
+
+				img.splitIntoZones(zones, true, pipeImagePart);
+			});
 		});
 	});
 }

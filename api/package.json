@@ -6,9 +6,13 @@
   "dependencies": {
     "body-parser": "^1.18.2",
     "child_process": "^1.0.2",
+    "dictionary-en-us": "^2.0.0",
     "express": "^4.16.3",
     "node-tesseract": "^0.2.7",
-    "tesseract.js": "^1.0.10"
+    "nspell": "^2.0.0",
+    "rmgarbage": "0.0.1",
+    "tesseract.js": "^1.0.10",
+    "ws": "^5.1.1"
   },
   "devDependencies": {},
   "scripts": {

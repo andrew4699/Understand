@@ -1,15 +1,16 @@
-const API_PORT = 4444;
+const SERVER_PORT = 4444;
 
-const express = require("express");
-const app = express();
-const bodyParser = require("body-parser");
+const router = require("./router");
+const Client = require("./structures/Client");
+const ws = require("ws");
+const server = new ws.Server({port: SERVER_PORT});
 
-app.use(bodyParser.json({limit: '50mb'}));
-//app.use(bodyParser.urlencoded({extended: true}));
+let clients = [];
 
-require("./routes")(app); // Initialize API routes
+console.log("Understand API web socket listening");
 
-app.listen(API_PORT, function()
+server.on("connection", function(client)
 {
-	console.log("Understand API server listening");
+	let c = new Client(client, router);
+	clients.push(c);
 });

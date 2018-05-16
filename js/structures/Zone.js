@@ -31,16 +31,16 @@ class Zone extends VisibleElement
 		};
 	}
 
-	static createFromArea(width, height, rows, columns)
+	static createFromArea(startX, startY, endX, endY, rows, columns)
 	{
-		let zones = [], x = 0, y = 0;
+		let zones = [], x = startX, y = startY;
 
-		let zoneWidth = width / columns,
-			zoneHeight = height / rows;
+		let zoneWidth = (endX - startX) / columns,
+			zoneHeight = (endY - startY) / rows;
 
-		while(y < height)
+		while(y < endY)
 		{
-			while(x < width)
+			while(x < endX)
 			{
 				let z = new Zone(x, y, zoneWidth, zoneHeight);
 				zones.push(z);
@@ -48,7 +48,7 @@ class Zone extends VisibleElement
 				x += zoneWidth;
 			}
 			
-			x = 0;
+			x = startX;
 			y += zoneHeight;
 		}
 
