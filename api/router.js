@@ -34,6 +34,7 @@ module.exports = function(request, client)
 
 	let respond = function(data)
 	{
+		console.log(data);
 		let payload = Object.assign({
 										requestID: request.requestID, 
 									 	date: Date.now()

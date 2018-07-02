@@ -26,12 +26,13 @@ module.exports = function(data, respond)
 			}
 			else
 			{
-				//console.log(text);
-				console.log("> Response sent (" + path + ")");
-
-				let text = rmgarbage(text);
-				text = utils.autoCorrect(text);
-				respond({text});
+				let clean = text;
+				clean = rmgarbage(text);
+				clean = utils.autoCorrect(clean, function(correctedText)
+				{
+					respond({text: correctedText});
+					console.log("> Response sent (" + path + ")");
+				});
 			}
 		});
 	});

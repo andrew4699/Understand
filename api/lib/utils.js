@@ -1,4 +1,9 @@
 const fs = require("fs");
+const nodehun = require("nodehun");
+const spellcheck = require("nodehun-sentences");
+
+const hunspell = new nodehun(fs.readFileSync("en_US.aff"),
+							 fs.readFileSync("en_US.dic"));
 
 let utils =
 {
@@ -30,9 +35,43 @@ let utils =
 			finished(img, err);
 		}
 	},
-	autoCorrect: function(text, dictionary)
+	autoCorrect: function(text, finish)
 	{
-		/* do this */
+		spellcheck(hunspell, text, function(error, typos)
+		{
+			if(error)
+			{
+				throw error;
+			}
+
+			let correctedText = text,
+				change = 0; // shift from positions in original "Text"
+
+			typos.forEach(function(typo)
+			{
+				//console.log("PREV: " + correctedText);
+				//console.log("FIXING: " + typo.word + " ---- TO: " + typo.suggestions[0]);
+				correctedText = correctedText.substring(0, typo.positions[0].from + change) +
+								typo.suggestions[0] +
+								correctedText.substring(typo.positions[0].to + change, correctedText.length);
+				//console.log("AFTER: " + correctedText);
+
+				change += typo.suggestions[0].length - typo.word.length;
+
+				//console.log(typo.positions);
+				//console.log("attempt correct " + typo.word + " to " + autocorrect(typo.word));
+			});
+
+			finish(correctedText);
+
+			//console.log("ORIG: " + text);
+			//console.log("CORRECTED: " + correctedText);
+
+			/*console.log("\n\nTYPOS:\n\n");
+			console.log(typos);*/
+		});
+
+		return text;
 	}
 };
 
