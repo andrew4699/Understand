@@ -1,6 +1,10 @@
 const utils = require("../lib/utils");
 const tesseract = require("node-tesseract");
 const rmgarbage = require("rmgarbage");
+const fs = require("fs");
+
+const vision = require("@google-cloud/vision");
+const client = new vision.ImageAnnotatorClient();
 
 module.exports = function(data, respond)
 {
@@ -17,7 +21,16 @@ module.exports = function(data, respond)
 
 		console.log("Processing image (" + path + ")...");
 
-		tesseract.process(path, function(err, text)
+		client.textDetection(path)
+		.then(function(results)
+		{
+			console.log(results[0]);
+			fs.writeFileSync("api-example.txt", utils.inspect(results[0]));
+			console.log("frwitten");
+			respond({abc: results[0], text: results[0].fullTextAnnotation.text});
+		});
+
+		/*tesseract.process(path, function(err, text)
 		{
 			if(err)
 			{
@@ -34,6 +47,6 @@ module.exports = function(data, respond)
 					console.log("> Response sent (" + path + ")");
 				});
 			}
-		});
+		});*/
 	});
 };

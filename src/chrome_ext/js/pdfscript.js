@@ -1,6 +1,6 @@
 "use strict";
 
-const SPLIT_ROWS = 3;
+const SPLIT_ROWS = 1;
 const SPLIT_COLS = 1;
 
 let api;
@@ -30,13 +30,10 @@ function pipeImagePart(image, zone)
 {
 	console.log(image);
 
-	image.scaleTo(image.width * 4, image.height * 4, function()
+	api.recognize(image.getData(), function(response)
 	{
-		api.recognize(image.getData(), function(response)
-		{
-			console.log(response);
-			zone.setVisible(true);
-		});
+		console.log(response);
+		zone.setVisible(true);
 	});
 }
 
@@ -46,7 +43,7 @@ function scanPage()
 	{
 		img.scaleTo(window.innerWidth, window.innerHeight, function()
 		{
-			img.getPDFBounds(function(leftX, rightX)
+			/*img.getPDFBounds(function(leftX, rightX)
 			{
 				console.log(leftX, rightX);
 
@@ -58,7 +55,10 @@ function scanPage()
 				}
 
 				img.splitIntoZones(zones, true, pipeImagePart);
-			});
+			});*/
+
+			let zones = Zone.createFromArea(0, 0, window.innerWidth, window.innerHeight, SPLIT_ROWS, SPLIT_COLS);
+			img.splitIntoZones(zones, true, pipeImagePart);
 		});
 	});
 }

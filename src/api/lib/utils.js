@@ -49,17 +49,23 @@ let utils =
 
 			typos.forEach(function(typo)
 			{
-				//console.log("PREV: " + correctedText);
-				//console.log("FIXING: " + typo.word + " ---- TO: " + typo.suggestions[0]);
-				correctedText = correctedText.substring(0, typo.positions[0].from + change) +
-								typo.suggestions[0] +
-								correctedText.substring(typo.positions[0].to + change, correctedText.length);
-				//console.log("AFTER: " + correctedText);
+				if(typo.suggestions.length > 0)
+				{
+					//console.log("PREV: " + correctedText);
+					//console.log("FIXING: " + typo.word + " ---- TO: " + typo.suggestions[0]);
+					correctedText = correctedText.substring(0, typo.positions[0].from + change) +
+									typo.suggestions[0] +
+									correctedText.substring(typo.positions[0].to + change, correctedText.length);
+					//console.log("AFTER: " + correctedText);
 
-				change += typo.suggestions[0].length - typo.word.length;
+					//console.log(typo.suggestions);
+					//console.log(typo.positions);
+					console.log(typo);
+					change += typo.suggestions[0].length - typo.word.length;
 
-				//console.log(typo.positions);
-				//console.log("attempt correct " + typo.word + " to " + autocorrect(typo.word));
+					//console.log(typo.positions);
+					//console.log("attempt correct " + typo.word + " to " + autocorrect(typo.word));
+				} 
 			});
 
 			finish(correctedText);
@@ -72,6 +78,17 @@ let utils =
 		});
 
 		return text;
+	},
+	inspect: function(o,i)
+	{
+		if(typeof i=='undefined')i='';
+		if(i.length>50)return '[MAX ITERATIONS]';
+		var r=[];
+		for(var p in o){
+			var t=typeof o[p];
+			r.push(i+'"'+p+'" ('+t+') => '+(t=='object' ? 'object:'+ utils.inspect(o[p],i+'  ') : o[p]+''));
+		}
+		return r.join(i+'\n');
 	}
 };
 

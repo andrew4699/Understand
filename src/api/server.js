@@ -1,5 +1,6 @@
 const SERVER_PORT = 4444;
 
+require("dotenv").config();
 const router = require("./router");
 const Client = require("./structures/Client");
 const ws = require("ws");
