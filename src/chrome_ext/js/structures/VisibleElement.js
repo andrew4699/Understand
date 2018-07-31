@@ -22,11 +22,18 @@ class VisibleElement
 		}
 	}
 
+	getDOMElement()
+	{
+		return this.__domElement;
+	}
+
 	__createDOMElement()
 	{
 		this.__domElement = document.createElement(this.__domElementType);
 		this.__updateStyles();
+		
 		document.body.appendChild(this.__domElement);
+		//document.body.insertBefore(this.__domElement, document.body.firstChild);
 	}
 
 	__updateStyles()

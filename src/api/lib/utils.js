@@ -35,6 +35,10 @@ let utils =
 			finished(img, err);
 		}
 	},
+	isAWord: function(word, cb)
+	{
+		return hunspell.isCorrectSync(word);
+	},
 	autoCorrect: function(text, finish)
 	{
 		spellcheck(hunspell, text, function(error, typos)

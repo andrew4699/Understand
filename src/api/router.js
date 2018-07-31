@@ -13,12 +13,7 @@
 
 */
 
-const recognize = require("./requests/recognize");
-
-/*recognize({image: "./out177.png"}, function(data)
-{
-	console.log(data);
-});*/
+const recognize = require("./requests/recognize/recognize");
 
 const routes =
 {
@@ -34,7 +29,6 @@ module.exports = function(request, client)
 
 	let respond = function(data)
 	{
-		console.log(data);
 		let payload = Object.assign({
 										requestID: request.requestID, 
 									 	date: Date.now()

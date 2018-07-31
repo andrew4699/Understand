@@ -32,8 +32,24 @@ function pipeImagePart(image, zone)
 
 	api.recognize(image.getData(), function(response)
 	{
-		console.log(response);
-		zone.setVisible(true);
+		const zones = [];
+		
+		for(let i = 0; i < response.blocks.length; i++)
+		{
+			const width = response.blocks[i].bounds[1].x - response.blocks[i].bounds[0].x;
+			const height = response.blocks[i].bounds[2].y - response.blocks[i].bounds[0].y;
+
+			const zone = new TextZone(response.blocks[i].text,
+									  response.blocks[i].bounds[0].x,
+									  response.blocks[i].bounds[0].y,
+									  width,
+									  height);
+			
+			//zone.setVisible(true);
+			zones.push(zone);
+		}
+
+		setSearchZones(zones);
 	});
 }
 
@@ -43,20 +59,6 @@ function scanPage()
 	{
 		img.scaleTo(window.innerWidth, window.innerHeight, function()
 		{
-			/*img.getPDFBounds(function(leftX, rightX)
-			{
-				console.log(leftX, rightX);
-
-				let zones = Zone.createFromArea(leftX, 0, rightX, window.innerHeight, SPLIT_ROWS, SPLIT_COLS);
-
-				for(let i = 0; i < zones.length; i++)
-				{
-					//zones[i].setVisible(true);
-				}
-
-				img.splitIntoZones(zones, true, pipeImagePart);
-			});*/
-
 			let zones = Zone.createFromArea(0, 0, window.innerWidth, window.innerHeight, SPLIT_ROWS, SPLIT_COLS);
 			img.splitIntoZones(zones, true, pipeImagePart);
 		});
