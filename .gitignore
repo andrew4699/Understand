@@ -3,6 +3,3 @@
 *.code-workspace
 
 node_modules/
-
-src/api/google_cloud.json
-src/api/images/
