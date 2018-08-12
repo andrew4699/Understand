@@ -1,0 +1,55 @@
+{
+    "extends": ["tslint:recommended", "tslint-config-prettier"],
+    "linterOptions": {
+      "exclude": [
+        "config/**/*.js",
+        "node_modules/**/*.{ts,tsx}",
+        "**/*.d.{ts,tsx}"
+      ]
+    },
+    "rules": {
+      "object-literal-sort-keys": false,
+      "no-console": false,
+      "no-string-literal": false,
+      "one-variable-per-declaration": false,
+      "curly": false,
+      "variable-name": [false],
+      "interface-name": [true, "never-prefix"],
+      "forin": false,
+      "prefer-const": false,
+      "prefer-for-of": false,
+      "only-arrow-functions": false,
+      "object-literal-shorthand": false,
+      "comment-format": false,
+      "no-var-requires": false,
+      "no-reference": false,
+      "ordered-imports": false,
+      "no-empty-interface": false,
+      "ban-types": false,
+      "member-ordering": false,
+      "jsx-boolean-value": false
+    },
+    "jsRules": {
+      "object-literal-sort-keys": false,
+      "no-console": false,
+      "no-string-literal": false,
+      "one-variable-per-declaration": false,
+      "curly": false,
+      "variable-name": [false],
+      "forin": false,
+      "prefer-const": false,
+      "prefer-for-of": false,
+      "only-arrow-functions": false,
+      "object-literal-shorthand": false,
+      "comment-format": false,
+      "no-var-requires": false,
+      "no-reference": false,
+      "ordered-imports": false,
+      "no-empty-interface": false,
+      "ban-types": false,
+      "member-ordering": false,
+      "jsx-boolean-value": false
+    },
+    "defaultSeverity": "warning"
+  }
+  
