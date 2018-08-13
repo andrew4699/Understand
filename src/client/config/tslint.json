@@ -2,9 +2,9 @@
     "extends": ["tslint:recommended", "tslint-config-prettier"],
     "linterOptions": {
       "exclude": [
-        "config/**/*.js",
-        "node_modules/**/*.{ts,tsx}",
-        "**/*.d.{ts,tsx}"
+        "./**/*.js",
+        "../node_modules/**/*.{ts,tsx}",
+        "../**/*.d.{ts,tsx}"
       ]
     },
     "rules": {
@@ -27,7 +27,8 @@
       "no-empty-interface": false,
       "ban-types": false,
       "member-ordering": false,
-      "jsx-boolean-value": false
+      "jsx-boolean-value": false,
+      "no-unused-expression": false
     },
     "jsRules": {
       "object-literal-sort-keys": false,
@@ -48,7 +49,8 @@
       "no-empty-interface": false,
       "ban-types": false,
       "member-ordering": false,
-      "jsx-boolean-value": false
+      "jsx-boolean-value": false,
+      "no-unused-expression": false
     },
     "defaultSeverity": "warning"
   }

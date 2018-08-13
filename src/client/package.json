@@ -5,12 +5,13 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "webpack --watch --config config/webpack.config.dev.js",
+    "start": "webpack --watch --progress --config config/webpack.config.dev.js",
     "dist": "webpack --config config/webpack.config.dev.js"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/chrome": "0.0.71",
     "autoprefixer": "^9.1.0",
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.5",
@@ -19,15 +20,15 @@
     "file-loader": "^1.1.11",
     "fork-ts-checker-webpack-plugin": "^0.4.8",
     "postcss-loader": "^3.0.0",
-    "react-dev-utils": "^6.0.0-next.3e165448",
+    "react-dev-utils": "^4.0.1",
     "style-loader": "^0.22.1",
-    "ts-loader": "^4.4.2",
+    "ts-loader": "^3.5.0",
     "tsconfig-paths-webpack-plugin": "^3.2.0",
     "tslint": "^5.11.0",
     "tslint-config-prettier": "^1.14.0",
-    "typescript": "^3.0.1",
+    "typescript": "^2.9.2",
     "url-loader": "^1.0.1",
-    "webpack": "^4.16.5",
+    "webpack": "^3.5.1",
     "webpack-cli": "^3.1.0"
   },
   "dependencies": {

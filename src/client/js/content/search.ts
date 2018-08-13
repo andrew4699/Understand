@@ -1,4 +1,5 @@
-"use strict";
+import SearchBar from "./lib/SearchBar";
+import TextZone from "./lib/TextZone";
 
 const KEY_F = 70;
 
@@ -8,16 +9,10 @@ const SEARCH_UI_STD = 2;
 
 let searchUI = SEARCH_UI_NONE;
 const searchBar = new SearchBar();
-let searchZones = [];
-
-/*
-
-    TODO::: WEBPACK THIS PROJECT 
-
-*/
+let searchZones: TextZone[] = [];
 
 // handle searching
-function search(text)
+function search(text: string): void
 {
     const lowerText = text.toLowerCase();
 
@@ -30,7 +25,7 @@ function search(text)
 }
 
 // handle data
-function setSearchZones(zones)
+export function setSearchZones(zones: TextZone[]): void
 {
     searchZones = zones;
 }
@@ -50,7 +45,11 @@ document.addEventListener("keydown", function(event)
         {
             searchBar.setVisible(true);
             elem = searchBar.getDOMElement(); // if set to visible for the first time, the elem. just got created
-            elem.focus();
+            
+            if(elem)
+            {
+                elem.focus();
+            }
 
             // prevent default search dialog
             event.preventDefault();
@@ -65,7 +64,7 @@ document.addEventListener("keyup", function(event)
 
     if(event.target === elem)
     {
-        const value = event.target.value;
+        const value = (event.target as HTMLInputElement).value;
         search(value);
     }
 });

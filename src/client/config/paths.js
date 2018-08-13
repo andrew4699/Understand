@@ -46,7 +46,7 @@ module.exports = {
   appPublic: resolveApp('public'),
   appHtml: resolveApp('public/index.html'),
   appBackgroundJs: resolveApp('js/background/index.js'),
-  appContentScriptJs: resolveApp("js/content/index.js"),
+  appContentScriptJs: resolveApp("js/content/index.ts"),
   appPackageJson: resolveApp('package.json'),
   appSrc: resolveApp('js'),
   yarnLockFile: resolveApp('yarn.lock'),
@@ -54,7 +54,7 @@ module.exports = {
   appNodeModules: resolveApp('node_modules'),
   publicUrl: getPublicUrl(resolveApp('package.json')),
   servedPath: getServedPath(resolveApp('package.json')),
-  appTsConfig: resolveApp('config/tsconfig.json'),
-  appTsProdConfig: resolveApp('tsconfig.prod.json'),
+  appTsConfig: resolveApp('tsconfig.json'),
+  //appTsProdConfig: resolveApp('tsconfig.prod.json'),
   appTsLint: resolveApp('config/tslint.json'),
 };

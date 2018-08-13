@@ -1,11 +1,16 @@
-"use strict";
+import UnderstandAPI from "./lib/UnderstandAPI";
+import {Base64Image} from "./lib/Base64Image";
+import Zone from "./lib/Zone";
+import TextZone from "./lib/TextZone";
+import {takeScreenshot} from "./utils";
+import {setSearchZones} from "./search";
 
 const SPLIT_ROWS = 1;
 const SPLIT_COLS = 1;
 
-let api;
+let api: UnderstandAPI;
 
-function onLoad()
+function onLoad(): void
 {
 	if(window.location.href.slice(-4) !== ".pdf")
 		return;
@@ -16,17 +21,17 @@ function onLoad()
 	bindEvents();
 }
 
-function bindEvents()
+function bindEvents(): void
 {
 	window.addEventListener("resize", onResize);
 }
 
-function onResize(event)
+function onResize(event: Event): void
 {
 	console.log("resize", event);
 }
 
-function pipeImagePart(image, zone)
+function recognizeImage(image: Base64Image): void
 {
 	console.log(image);
 
@@ -59,8 +64,7 @@ function scanPage()
 	{
 		img.scaleTo(window.innerWidth, window.innerHeight, function()
 		{
-			let zones = Zone.createFromArea(0, 0, window.innerWidth, window.innerHeight, SPLIT_ROWS, SPLIT_COLS);
-			img.splitIntoZones(zones, true, pipeImagePart);
+			recognizeImage(img);
 		});
 	});
 }

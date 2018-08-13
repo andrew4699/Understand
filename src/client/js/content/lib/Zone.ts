@@ -1,8 +1,15 @@
-"use strict";
+import {VisibleElement, Style} from "./VisibleElement";
 
-class Zone extends VisibleElement
+export default class Zone extends VisibleElement
 {
-	constructor(x, y, width, height)
+	public x: number;
+	public y: number;
+	public width: number;
+	public height: number;
+	private __internalID: number;
+	private static __nextInternalID: number = 1;
+
+	public constructor(x: number, y: number, width: number, height: number)
 	{
 		super("div", "flex");
 		
@@ -15,7 +22,7 @@ class Zone extends VisibleElement
 		Zone.__nextInternalID++;
 	}
 
-	__getDOMElementStyle()
+	public __getDOMElementStyle(): Style
 	{
 		return {
 			position: "absolute",
@@ -31,9 +38,9 @@ class Zone extends VisibleElement
 		};
 	}
 
-	static createFromArea(startX, startY, endX, endY, rows, columns)
+	public static createFromArea(startX: number, startY: number, endX: number, endY: number, rows: number, columns: number): Zone[]
 	{
-		let zones = [], x = startX, y = startY;
+		let zones: Zone[] = [], x = startX, y = startY;
 
 		let zoneWidth = (endX - startX) / columns,
 			zoneHeight = (endY - startY) / rows;
@@ -55,5 +62,3 @@ class Zone extends VisibleElement
 		return zones;
 	}
 }
-
-Zone.__nextInternalID = 1;

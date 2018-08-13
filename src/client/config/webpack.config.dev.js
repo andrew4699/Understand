@@ -33,7 +33,7 @@ const modules = ['node_modules', paths.appNodeModules, "js", "components"].conca
 
 module.exports = [
   {
-    mode: process.env.NODE_ENV,
+    //mode: process.env.NODE_ENV,
     // You may want 'eval' instead if you prefer to see the compiled output in DevTools.
     // See the discussion in https://github.com/facebookincubator/create-react-app/issues/343.
     devtool: 'cheap-module-source-map',
@@ -42,7 +42,7 @@ module.exports = [
     // The first two entry points enable "hot" CSS and auto-refreshes for JS.
     entry: [
       // We ship a few polyfills by default:
-      require.resolve('./polyfills'),
+      //require.resolve('./polyfills'),
       paths.appBackgroundJs,
       // We include the app code last so that if there is a runtime error during
       // initialization, it doesn't blow up the WebpackDevServer client, and
@@ -243,7 +243,7 @@ module.exports = [
     }
   },
   {
-    mode: process.env.NODE_ENV,
+    //mode: process.env.NODE_ENV,
     // You may want 'eval' instead if you prefer to see the compiled output in DevTools.
     // See the discussion in https://github.com/facebookincubator/create-react-app/issues/343.
     devtool: 'cheap-module-source-map',
@@ -252,7 +252,7 @@ module.exports = [
     // The first two entry points enable "hot" CSS and auto-refreshes for JS.
     entry: [
       // We ship a few polyfills by default:
-      require.resolve('./polyfills'),
+      //require.resolve('./polyfills'),
       paths.appContentScriptJs,
       // We include the app code last so that if there is a runtime error during
       // initialization, it doesn't blow up the WebpackDevServer client, and

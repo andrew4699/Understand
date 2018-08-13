@@ -1,10 +1,43 @@
-"use strict";
+import {VisibleElement, Style} from "./VisibleElement";
+
+declare type PixelPipe = (pix: Pixel) => boolean;
+
+declare interface PixelStyle
+{
+	position: string;
+	top: string;
+	left: string;
+	background: string;
+	width: string;
+	height: string;
+}
+
+declare interface PipeOptions
+{
+	xSpacing: number;
+	ySpacing: number;
+	startX: number;
+	startY: number;
+	minX: number;
+	minY: number;
+	maxX: number;
+	maxY: number;
+}
 
 const DOM_ELEMENT_TYPE = "div";
 
-class Pixel extends VisibleElement
+export default class Pixel extends VisibleElement
 {
-	constructor(x, y, r, g, b, a)
+	public x: number;
+	public y: number;
+	public r: number;
+	public g: number;
+	public b: number;
+	public a: number;
+
+	private __visibleSize: number;
+
+	public constructor(x: number, y: number, r: number, g: number, b: number, a: number)
 	{
 		super();
 		this.__visibleSize = 1;
@@ -17,7 +50,7 @@ class Pixel extends VisibleElement
 		this.a = a;
 	}
 
-	colorEquals(pix, testAlpha)
+	public colorEquals(pix: Pixel, testAlpha: boolean): boolean
 	{
 		if(typeof testAlpha === "undefined")
 		{
@@ -28,7 +61,7 @@ class Pixel extends VisibleElement
 			   						   this.b === pix.b && (this.a === pix.a || !testAlpha);
 	}
 
-	scale(oldWidth, oldHeight, newWidth, newHeight)
+	public scale(oldWidth: number, oldHeight: number, newWidth: number, newHeight: number): Pixel
 	{
 		let propX = this.x / oldWidth,
 			propY = this.y / oldHeight;
@@ -36,17 +69,17 @@ class Pixel extends VisibleElement
 		return new Pixel(newWidth * propX, newHeight * propY, this.r, this.g, this.b, this.a);
 	}
 
-	setVisibleSize(size)
+	public setVisibleSize(size: number): void
 	{
 		this.__visibleSize = size;
 
-		if(this.__domElement)
+		if(this.getDOMElement())
 		{
-			this.__updateStyles();
+			this.updateStyles();
 		}
 	}
 
-	__getDOMElementStyle()
+	private __getDOMElementStyle(): Style
 	{
 		return {
 			position: "absolute",
@@ -59,7 +92,7 @@ class Pixel extends VisibleElement
 	}
 
 	// Converts a canvas coordinate (x, y) to it's imageData.data index
-	static __getImageDataIndexFromPosition(x, y, width)
+	public static __getImageDataIndexFromPosition(x: number, y: number, width: number): number
 	{
 		return (x * 4) + (y * width * 4);
 	}
@@ -68,16 +101,16 @@ class Pixel extends VisibleElement
 		Converts canvas context.getImageData into pixels, sending each one
 		through the pipe function until it returns false
 	*/
-	static pipeImageData(imgData, pipe, userOpts)
+	public static pipeImageData(imgData: ImageData, pipe: PixelPipe, userOpts: PipeOptions): void
 	{
-		if(imgData.data.length % 4 != 0)
+		if(imgData.data.length % 4 !== 0)
 		{
-			throw "imgData not in group of 4";
+			throw new Error("imgData not in group of 4");
 		}
 
-		if(imgData.data.length / 4 != (imgData.width * imgData.height))
+		if(imgData.data.length / 4 !== (imgData.width * imgData.height))
 		{
-			throw "imgData doesn't match width and height";
+			throw new Error("imgData doesn't match width and height");
 		}
 
 		let opts = {xSpacing: 1, ySpacing: 1, startX: 0, startY: 0, minX: 0, minY: 0, maxX: imgData.width, maxY: imgData.height};

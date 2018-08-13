@@ -1,10 +1,24 @@
-"use strict";
+declare interface ResponseHandlers
+{
+	[reqID: number]: ResponseCallback;
+}
+
+declare type ResponseData = any;
+declare type ResponseCallback = (data: ResponseData) => void;
+declare type MessageData = any;
 
 const WEBSOCKET_URL = "ws://localhost:4444";
 
-class UnderstandAPI
+export default class UnderstandAPI
 {
-	constructor(key)
+	private __apiKey: string;
+	private __socket: WebSocket;
+	private __nextRequestID: number;
+	private __responseHandlers: ResponseHandlers;
+
+	public onconnect: () => void;
+
+	public constructor(key: string)
 	{
 		this.__apiKey = key;
 		this.__socket = new WebSocket(WEBSOCKET_URL);
@@ -27,12 +41,12 @@ class UnderstandAPI
 				....
 			}
 	*/
-	recognize(image, finished)
+	public recognize(image: string, finished: ResponseCallback): void
 	{
 		this.__sendRequest("recognize", {image}, finished);
 	}
 
-	__onConnected()
+	private __onConnected(): void
 	{
 		if(typeof this.onconnect !== "undefined")
 		{
@@ -42,28 +56,28 @@ class UnderstandAPI
 		console.log("API socket established");
 	}
 
-	__onDisconnected()
+	private __onDisconnected(): void
 	{
 		console.warn("Disconnected from API server");
 	}
 
-	__onDataProcessed(data)
+	private __onDataProcessed(data: MessageData): void
 	{
 		if(typeof data.requestID === "undefined")
 		{
-			throw "API message did not include requestID";
+			throw new Error("API message did not include requestID");
 		}
 
 		if(typeof this.__responseHandlers[data.requestID] !== "function")
 		{
-			throw "No valid response handler exists for requestID = " + data.requestID;
+			throw new Error("No valid response handler exists for requestID = " + data.requestID);
 		}
 
 		let fn = this.__responseHandlers[data.requestID];
 		fn.call(null, data);
 	}
 
-	__onRawDataReceived(message)
+	private __onRawDataReceived(message: MessageData): void
 	{
 		try
 		{
@@ -78,12 +92,12 @@ class UnderstandAPI
 		}
 	}
 
-	__onBeforeUnload()
+	private __onBeforeUnload(): void
 	{
 		this.__socket.close();
 	}
 
-	__bindSocketEvents()
+	private __bindSocketEvents(): void
 	{
 		this.__socket.onopen = this.__onConnected.bind(this);
 		this.__socket.onclose = this.__onDisconnected.bind(this);
@@ -91,7 +105,7 @@ class UnderstandAPI
 		this.__socket.onmessage = this.__onRawDataReceived.bind(this);
 	}
 
-	__sendRequest(type, data, finished)
+	private __sendRequest(type: string, data: MessageData, finished: ResponseCallback): void
 	{
 		let requestID = this.__getNextRequestID();
 		this.__responseHandlers[requestID] = finished;
@@ -108,13 +122,13 @@ class UnderstandAPI
 		this.__socket.send(JSON.stringify(payload));
 	}
 
-	__getNextRequestID()
+	private __getNextRequestID(): number
 	{
 		this.__nextRequestID++;
 		return this.__nextRequestID;
 	}
 
-	/*__sendRequest(type, data, finished)
+	/*private __sendRequest(type, data, finished): void
 	{
 		// Prepare request
 		let req = new XMLHttpRequest();
