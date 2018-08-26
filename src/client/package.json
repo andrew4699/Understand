@@ -12,6 +12,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/chrome": "0.0.71",
+    "@types/pdfjs-dist": "^0.1.2",
     "autoprefixer": "^9.1.0",
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.5",
@@ -33,6 +34,7 @@
   },
   "dependencies": {
     "object-assign": "^4.1.1",
+    "pdfjs-dist": "^2.0.489",
     "promise": "^8.0.1",
     "whatwg-fetch": "^2.0.4"
   }

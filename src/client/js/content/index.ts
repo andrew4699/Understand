@@ -3,7 +3,7 @@ import {Base64Image} from "./lib/Base64Image";
 import Zone from "./lib/Zone";
 import TextZone from "./lib/TextZone";
 import {takeScreenshot} from "./utils";
-import {setSearchZones} from "./search";
+import search from "./search/core";
 
 const SPLIT_ROWS = 1;
 const SPLIT_COLS = 1;
@@ -37,7 +37,7 @@ function recognizeImage(image: Base64Image): void
 
 	api.recognize(image.getData(), function(response)
 	{
-		const zones = [];
+		const zones: TextZone[] = [];
 		
 		for(let i = 0; i < response.blocks.length; i++)
 		{
@@ -54,7 +54,7 @@ function recognizeImage(image: Base64Image): void
 			zones.push(zone);
 		}
 
-		setSearchZones(zones);
+		search.init(zones);
 	});
 }
 
