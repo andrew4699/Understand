@@ -9,13 +9,21 @@ let utils =
 {
 	toImageFile: function(img, finished)
 	{
-		if(typeof img === "string")
+		const rand = Math.floor(Math.random() * 500);
+		const filePath = "./images/out" + rand + ".png";
+
+		if(img instanceof Buffer)
+		{
+			fs.writeFile(filePath, img, function(error)
+			{
+				finished(filePath, error);
+			});
+		}
+		else if(typeof img === "string")
 		{
 			if(img.indexOf("data:image") > -1)
 			{
-				let rand = Math.floor(Math.random() * 500);
-				let fileData = img.replace(/^data:image\/png;base64,/, ""),
-					filePath = "./images/out" + rand + ".png";
+				const fileData = img.replace(/^data:image\/png;base64,/, "");
 
 				fs.writeFile(filePath, fileData, "base64", function(error)
 				{
@@ -93,6 +101,23 @@ let utils =
 			r.push(i+'"'+p+'" ('+t+') => '+(t=='object' ? 'object:'+ utils.inspect(o[p],i+'  ') : o[p]+''));
 		}
 		return r.join(i+'\n');
+	},
+	// Parses an Understand Websocket message and returns the header & body
+	parseMessage: function(msg)
+	{
+		const needle = "{".charCodeAt(0);
+		let hLenEnd = 0;
+		
+		while(msg[hLenEnd] !== needle)
+		{
+			hLenEnd++;
+		}
+
+		const hLen = parseInt(msg.slice(0, hLenEnd), 10);
+		const header = JSON.parse(msg.slice(hLenEnd, hLenEnd + hLen));
+		const body = msg.slice(hLenEnd + hLen);
+
+		return {header, body};
 	}
 };
 

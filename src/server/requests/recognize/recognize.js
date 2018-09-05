@@ -1,24 +1,25 @@
 const utils = require("../../lib/utils");
 const fs = require("fs");
 const getAnnotationBlocks = require("../../lib/getAnnotationBlocks");
+const getTextParts = require("../../lib/getTextParts");
 
 const vision = require("@google-cloud/vision");
 const client = new vision.ImageAnnotatorClient();
 
-module.exports = function(data, respond)
+module.exports = function(body, respond)
 {
-	if(process.env.MOCK_RESPONSE)
+	if(!process.env.MOCK_RESPONSE)
 	{
-		const path = __dirname + "/mock.json";
+		const path = __dirname + "/mock2.json";
 		let mockData = fs.readFileSync(path);
 		mockData = JSON.parse(mockData);
 
-		const blocks = getAnnotationBlocks(mockData[0].fullTextAnnotation);
-		respond({blocks});
+		const parts = getTextParts(mockData[0]);
+		respond({parts});
 		return;
 	}
 
-	utils.toImageFile(data.image, function(path, error)
+	utils.toImageFile(body, function(path, error)
 	{
 		if(error)
 		{
@@ -32,8 +33,10 @@ module.exports = function(data, respond)
 		client.textDetection(path)
 		.then(function(results)
 		{
-			const blocks = getAnnotationBlocks(results[0].fullTextAnnotation);
-			respond({blocks});
+			//console.log(results);
+			//fs.writeFileSync(__dirname + "/mock2.json", JSON.stringify(results), "utf8");
+			const parts = getTextParts(results[0]);
+			respond({parts});
 		});
 	});
 };

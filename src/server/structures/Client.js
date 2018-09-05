@@ -1,3 +1,5 @@
+const {parseMessage} = require("../lib/utils");
+
 class Client
 {
 	constructor(socket, routeRequest)
@@ -24,27 +26,30 @@ class Client
 		this.__socket.on("message", this.__onRawDataReceived.bind(this));
 	}
 
-	__onDataProcessed(data)
+	//__onDataProcessed(data)
+	__onDataProcessed(header, body)
 	{
-		if(typeof data.requestID === "undefined")
+		if(typeof header.requestID === "undefined")
 		{
 			throw "API message did not include requestID";
 		}
 
-		if(typeof data.type === "undefined")
+		if(typeof header.type === "undefined")
 		{
 			throw "API message did not include request type";
 		}
 
-		this.__routeRequest(data, this);
+		this.__routeRequest(header, body, this);
 	}
 
 	__onRawDataReceived(message)
 	{
+		const {header, body} = parseMessage(message);
+		
 		try
 		{
-			let messageData = JSON.parse(message);
-			this.__onDataProcessed(messageData);
+			//let messageData = JSON.parse(message);
+			this.__onDataProcessed(header, body);
 		}
 		catch(ex)
 		{

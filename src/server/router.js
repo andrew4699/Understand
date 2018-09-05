@@ -20,7 +20,7 @@ const routes =
 	"recognize": recognize
 };
 
-module.exports = function(request, client)
+module.exports = function(request, body, client)
 {
 	if(typeof routes[request.type] === "undefined")
 	{
@@ -29,13 +29,13 @@ module.exports = function(request, client)
 
 	let respond = function(data)
 	{
-		let payload = Object.assign({
-										requestID: request.requestID, 
-									 	date: Date.now()
-									},
-									data);
+		const payload = Object.assign({
+			requestID: request.requestID, 
+		},
+		data);
+
 		client.send(payload);
 	};
 
-	routes[request.type](request, respond);
+	routes[request.type](body, respond);
 };
