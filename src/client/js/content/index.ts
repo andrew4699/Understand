@@ -1,4 +1,4 @@
-import UnderstandAPI from "./lib/UnderstandAPI";
+/*import UnderstandAPI from "./lib/UnderstandAPI";
 import {Base64Image} from "./lib/Base64Image";
 import Zone from "./lib/Zone";
 import TextZone from "./lib/TextZone";
@@ -72,4 +72,4 @@ function scanPage()
 /* ============================
 		BEGIN THE MADNESS
    ============================ */
-setTimeout(onLoad, 2000);
+//setTimeout(onLoad, 2000);

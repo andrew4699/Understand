@@ -1,23 +1,26 @@
-import * as x from "./web/app";
-/*import PDFViewer from "./viewer";
+import App from "./app";
 
-let viewer: PDFViewer;
+const _window = (window as any);
 
-document.addEventListener("DOMContentLoaded", function()
+(function main()
+{
+    const options =
+    {
+        pdfUrl: getPDFUrl()
+    };
+
+    _window._UnderstandChromeApp = new App(options);
+})();
+
+function getPDFUrl(): string
 {
     const url = new URL(window.location.href);
+    const pdf = url.searchParams.get("pdf");
 
-    const container = document.getElementById("understand-pdf-viewer");
-    const pdfUrl = url.searchParams.get("pdf");
-
-    if(container && pdfUrl)
+    if(!pdf)
     {
-        fetch(pdfUrl).then(response => response.blob()).then(function(blob)
-        {
-            PDFViewer.AwaitImports().then(function()
-            {
-                viewer = new PDFViewer(container, blob);
-            });
-        });
+        throw new Error("No PDF could be extracted from the URL");
     }
-});*/
+
+    return pdf;
+}

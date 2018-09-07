@@ -1,3 +1,5 @@
+import { blobWithHeader } from "../util";
+
 declare interface ResponseHandlers
 {
 	[reqID: number]: ResponseCallback;
@@ -27,23 +29,20 @@ export default class UnderstandAPI
 		this.__responseHandlers = {};
 	}
 
-	/*
-		image is expected to be a base64 string, ex:
-		
-			"data:image/gif;base64,R0lGODlhEAAQAMQAAORHHOVSKud="
-
-		finished is expected to be a function(response, error), ex:
-
-			function(response, error)
-			{
-				if(error) throw error;
-
-				....
-			}
-	*/
-	public recognize(image: string, finished: ResponseCallback): void
+	public recognize(image: Blob, finished: ResponseCallback): number
 	{
-		this.__sendRequest("recognize", {image}, finished);
+		const requestID = this.__getNextRequestID();
+		this.__responseHandlers[requestID] = finished;
+
+		const header =
+		{
+			type: "recognize",
+			requestID,
+		};
+
+		const data = blobWithHeader(JSON.stringify(header), image);
+		this.__socket.send(data);
+		return requestID;
 	}
 
 	private __onConnected(): void
@@ -103,23 +102,6 @@ export default class UnderstandAPI
 		this.__socket.onclose = this.__onDisconnected.bind(this);
 		window.addEventListener("beforeunload", this.__onBeforeUnload.bind(this));
 		this.__socket.onmessage = this.__onRawDataReceived.bind(this);
-	}
-
-	private __sendRequest(type: string, data: MessageData, finished: ResponseCallback): void
-	{
-		let requestID = this.__getNextRequestID();
-		this.__responseHandlers[requestID] = finished;
-
-		let payload =
-		{
-			type,
-			requestID,
-			apiKey: this.__apiKey,
-			date: Date.now(),
-			...data
-		};
-
-		this.__socket.send(JSON.stringify(payload));
 	}
 
 	private __getNextRequestID(): number
