@@ -15,6 +15,7 @@ interface ImgData
 {
     page: number;
     pos: Position;
+    size: Size;
     text?: string;
 }
 
@@ -134,7 +135,7 @@ export default class App
         return Promise.resolve(content);
     }
 
-    private registerText(page: number, origin: Position, data: ImgText): void
+    private registerText(page: number, origin: Position, size: Size, data: ImgText): void
     {
         console.log("register", page, origin, data, this.textData[page]);
         //const lastIdx = this.textData[page].divs.length - 1;
@@ -159,17 +160,23 @@ export default class App
             origin[1] * heightRatio,
         ];
 
-        const domRelativePosition: Position = [
+        /*const domRelativePosition: Position = [
             adjustedOrigin[0] + (data.bounds[0].x * (1 / widthRatio)),
             adjustedOrigin[1] + (data.bounds[0].y * (1 / heightRatio)),
+        ];*/
+
+        console.log(data.bounds[0].x, size[0], canvas.parentElement.clientWidth, adjustedOrigin[0]);
+        const domRelativePosition: Position = [
+            ((data.bounds[0].x / size[0]) * canvas.parentElement.clientWidth) - (adjustedOrigin[0] / 2),
+            ((data.bounds[0].y / size[1]) * canvas.parentElement.clientHeight) - (adjustedOrigin[1] / 2),
         ];
 
-        const size: Size = [
+        const ssize: Size = [
             (data.bounds[2].x - data.bounds[0].x) * (1 / widthRatio),
             (data.bounds[2].y - data.bounds[0].y) * (1 / heightRatio),
         ];
 
-        console.log(adjustedOrigin, domRelativePosition, size, [widthRatio, heightRatio])
+        console.log(adjustedOrigin, domRelativePosition, size, [widthRatio, heightRatio], canvas.parentElement)
 
         const el = document.createElement("div");
         el.innerText = data.text;
@@ -182,7 +189,7 @@ export default class App
 
         if(!textLayer)
         {
-            throw new Error("");
+            throw new Error("Text layer not found for page " + page);
         }
 
         const lastChildIdx = textLayer.children.length - 1;
@@ -202,27 +209,28 @@ export default class App
     // Begins the pipeline of converting the image to text
     public registerImage(img: Blob, page: number, pos: Position, size: Size): void
     {
+        if(page > 1) return;
         if(size[0] > MIN_IMG_SIZE && size[1] > MIN_IMG_SIZE)
         {
             console.log(img);
             const idx = this.api.recognize(img, this.onImageRecognized.bind(this));
-            this.imgData[idx] = {page: page, pos};
+            this.imgData[idx] = {page: page, pos, size};
             console.log(img, page, pos, size);
         }
-    }
+    }   
 
     private onImageRecognized(data: ImgRecognizeResponse): void
     {
         const parts = data.parts;
         const rid = data.requestID;
 
-        const {page, pos} = this.imgData[rid];
+        const {page, pos, size} = this.imgData[rid];
 
         parts.forEach((part: ImgText) =>
         {
             setTimeout(() =>
             {
-                this.registerText(page, pos, part);
+                this.registerText(page, pos, size, part);
             }, 5000);
         });
     }

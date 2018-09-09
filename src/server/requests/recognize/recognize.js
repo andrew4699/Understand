@@ -8,7 +8,7 @@ const client = new vision.ImageAnnotatorClient();
 
 module.exports = function(body, respond)
 {
-	if(!process.env.MOCK_RESPONSE)
+	if(process.env.MOCK_RESPONSE)
 	{
 		const path = __dirname + "/mock2.json";
 		let mockData = fs.readFileSync(path);
@@ -34,7 +34,7 @@ module.exports = function(body, respond)
 		.then(function(results)
 		{
 			//console.log(results);
-			//fs.writeFileSync(__dirname + "/mock2.json", JSON.stringify(results), "utf8");
+			//fs.writeFileSync(__dirname + "/mock4.json", JSON.stringify(results), "utf8");
 			const parts = getTextParts(results[0]);
 			respond({parts});
 		});
