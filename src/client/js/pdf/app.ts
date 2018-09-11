@@ -1,4 +1,7 @@
 import UnderstandAPI from "./lib/UnderstandAPI";
+import GUI from "./gui/core";
+import {ToastType, State as ToastState} from "./gui/components/toasts";
+import {objSize} from "./util";
 
 interface AppOptions
 {
@@ -16,6 +19,7 @@ interface ImgData
     page: number;
     pos: Position;
     size: Size;
+    scale: Scale;
     text?: string;
 }
 
@@ -59,13 +63,23 @@ interface PdfTextItems
     strings: string[];
 }
 
+interface DisplayMetrics
+{
+    pos: Position;
+    size: Size;
+}
+
 type Position = [number, number]; // (x, y)
 type Size = [number, number]; // (height, width)
+type Scale = [number, number]; // (x-scale, y-scale)
 
+const GUI_CONTAINER_ID = "understand-gui-container";
+const GUI_INIT_DELAY = 150;
 const MIN_IMG_SIZE = 10;
 
 export default class App
 {
+    private gui: GUI;
     private api: UnderstandAPI;
     private options: AppOptions;
     private imgData: ImgData[];
@@ -83,6 +97,28 @@ export default class App
 
         this.processedImages = {};
         this.textData = {};
+
+        setTimeout(this.initGUI.bind(this), GUI_INIT_DELAY);
+    }
+
+    private initGUI(): void
+    {
+        const guiContainer = document.getElementById(GUI_CONTAINER_ID);
+
+        if(!guiContainer)
+        {
+            throw new Error("Could not find container by id = " + GUI_CONTAINER_ID);
+        }
+
+        this.gui = new GUI(guiContainer);
+        this.gui.setActiveComponent("toasts");
+    }
+
+    private addToast(type: ToastType, body: string): void
+    {
+        const state = this.gui.getState() as ToastState;
+        state.toasts = state.toasts.concat({type, body});
+        this.gui.setState(state);
     }
 
     public wasImageProcessed(img: string): boolean
@@ -131,16 +167,15 @@ export default class App
             });
         }
         
-        //console.log("itms", content.items);
         return Promise.resolve(content);
     }
 
-    private registerText(page: number, origin: Position, size: Size, data: ImgText): void
+    private registerText(loc: ImgData, textInfo: ImgText): void
     {
-        console.log("register", page, origin, data, this.textData[page]);
+        console.log("register", loc, textInfo, this.textData[loc.page]);
         //const lastIdx = this.textData[page].divs.length - 1;
         //const el = this.textData[page].divs[lastIdx].cloneNode(true) as HTMLElement;
-        const canvas: HTMLCanvasElement | null = document.getElementById("page" + page) as HTMLCanvasElement | null;
+        const canvas: HTMLCanvasElement | null = document.getElementById("page" + loc.page) as HTMLCanvasElement | null;
 
         if(!canvas)
         {
@@ -152,70 +187,56 @@ export default class App
             throw new Error("");
         }
 
-        const widthRatio = (canvas.parentElement.clientWidth / canvas.width),
-              heightRatio = (canvas.parentElement.clientHeight / canvas.height);
-
-        const adjustedOrigin: Position = [
-            origin[0] * widthRatio,
-            origin[1] * heightRatio,
-        ];
-
-        /*const domRelativePosition: Position = [
-            adjustedOrigin[0] + (data.bounds[0].x * (1 / widthRatio)),
-            adjustedOrigin[1] + (data.bounds[0].y * (1 / heightRatio)),
-        ];*/
-
-        console.log(data.bounds[0].x, size[0], canvas.parentElement.clientWidth, adjustedOrigin[0]);
-        const domRelativePosition: Position = [
-            ((data.bounds[0].x / size[0]) * canvas.parentElement.clientWidth) - (adjustedOrigin[0] / 2),
-            ((data.bounds[0].y / size[1]) * canvas.parentElement.clientHeight) - (adjustedOrigin[1] / 2),
-        ];
-
-        const ssize: Size = [
-            (data.bounds[2].x - data.bounds[0].x) * (1 / widthRatio),
-            (data.bounds[2].y - data.bounds[0].y) * (1 / heightRatio),
-        ];
-
-        console.log(adjustedOrigin, domRelativePosition, size, [widthRatio, heightRatio], canvas.parentElement)
+        const {pos, size} = calculateTextDisplayMetrics(canvas, loc, textInfo);
+        console.log("metrics", pos, size);
 
         const el = document.createElement("div");
-        el.innerText = data.text;
-        this.textData[page].divs.push(el);
+        el.innerText = textInfo.text;
+        this.textData[loc.page].divs.push(el);
 
-        el.style.top = domRelativePosition[1] + "px";
-        el.style.left = domRelativePosition[0] + "px";
+        el.style.top = pos[1] + "px";
+        el.style.left = pos[0] + "px";
 
-        const textLayer = document.querySelector(`.page[data-page-number="${page}"] .textLayer`);
+        const textLayer = document.querySelector(`.page[data-page-number="${loc.page}"] .textLayer`);
 
         if(!textLayer)
         {
-            throw new Error("Text layer not found for page " + page);
+            throw new Error("Text layer not found for page " + loc.page);
         }
 
         const lastChildIdx = textLayer.children.length - 1;
         textLayer.insertBefore(el, textLayer.children[lastChildIdx]);
 
-        this.textData[page].strings.push(data.text);
+        this.textData[loc.page].strings.push(textInfo.text);
 
-        if(typeof this.extraText[page] === "undefined")
+        if(typeof this.extraText[loc.page] === "undefined")
         {
-            this.extraText[page] = [];
+            this.extraText[loc.page] = [];
         }
 
-        this.extraText[page].push({size, text: data.text})
+        this.extraText[loc.page].push({size, text: textInfo.text});
+        this.checkFinished();
+    }
+
+    private checkFinished(): void
+    {
+        if(objSize(this.imgData) === 1)
+        {
+            this.addToast(ToastType.SUCCESS, "All images have been processed");
+        }
     }
 
     // Called when the PDF viewer renders an image
     // Begins the pipeline of converting the image to text
-    public registerImage(img: Blob, page: number, pos: Position, size: Size): void
+    public registerImage(img: Blob, page: number, pos: Position, size: Size, scale: Scale): void
     {
         if(page > 1) return;
         if(size[0] > MIN_IMG_SIZE && size[1] > MIN_IMG_SIZE)
         {
             console.log(img);
             const idx = this.api.recognize(img, this.onImageRecognized.bind(this));
-            this.imgData[idx] = {page: page, pos, size};
-            console.log(img, page, pos, size);
+            this.imgData[idx] = {page: page, pos, size, scale};
+            console.log(img, page, pos, size, scale);
         }
     }   
 
@@ -224,19 +245,54 @@ export default class App
         const parts = data.parts;
         const rid = data.requestID;
 
-        const {page, pos, size} = this.imgData[rid];
-
         parts.forEach((part: ImgText) =>
         {
             setTimeout(() =>
             {
-                this.registerText(page, pos, size, part);
+                this.registerText(this.imgData[rid], part);
+                //delete this.imgData[rid];
             }, 5000);
         });
+
     }
 
     public getPdfUrl(): string
     {
         return this.options.pdfUrl;
     }
+}
+
+function calculateTextDisplayMetrics(canvas: HTMLCanvasElement, loc: ImgData, textInfo: ImgText): DisplayMetrics
+{
+    const dom = canvas.parentElement;
+    
+    if(!dom)
+    {
+        throw new Error("Canvas parentElement was null when calculating text display metrics");
+    }
+    
+    const wRatio = dom.clientWidth / canvas.width;
+    const hRatio = dom.clientHeight / canvas.height;
+
+    const canvasImgOffset: Position =
+    [
+        wRatio * loc.pos[0],
+        hRatio * loc.pos[1],
+    ];
+
+    const pos: Position =
+    [
+        wRatio * (canvasImgOffset[0] + (textInfo.bounds[0].x / loc.scale[0])),
+        hRatio * (canvasImgOffset[1] + (textInfo.bounds[0].y / loc.scale[1]))
+    ];
+
+    //console.log("m", wRatio, canvasImgOffset[0], textInfo.bounds[0].x, loc.scale[0]);
+
+    const size: Size =
+    [
+        textInfo.bounds[2].x - textInfo.bounds[0].x,
+        textInfo.bounds[2].y - textInfo.bounds[0].y
+    ];
+
+    return {pos, size};
 }

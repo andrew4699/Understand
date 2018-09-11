@@ -22,5 +22,20 @@ export function onInterceptPDF(callback: InterceptCallback): void
         }
     }
 
-    chrome.webRequest.onBeforeRequest.addListener(interceptRequest, {urls: ["*://*/*"]}, ['blocking']);
+    // CLicked the extension icon
+    chrome.browserAction.onClicked.addListener(function(tab)
+    {
+        if(tab.url)
+        {
+            chrome.tabs.update({url: callback(tab.url)});
+        }
+    });
+
+    // Intercept web requests
+    chrome.webRequest.onBeforeRequest.addListener(interceptRequest,
+        {
+            urls: ["*://*/*"]
+        },
+        ['blocking']
+    );
 }

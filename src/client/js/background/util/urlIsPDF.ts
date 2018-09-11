@@ -1,4 +1,5 @@
 export default function urlIsPDF(url: string): boolean
 {
-    return url.endsWith(".pdf");
+    const structuredUrl = new URL(url);
+    return structuredUrl.pathname.endsWith(".pdf");
 }
