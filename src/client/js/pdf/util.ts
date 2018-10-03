@@ -7,3 +7,8 @@ export function objSize(obj: Object): number
 {
     return Object.keys(obj).length;
 }
+
+export function strToInt(str: string): number
+{
+    return parseInt(str, 10);
+}

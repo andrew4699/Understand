@@ -10,7 +10,7 @@ module.exports = function(body, respond)
 {
 	if(process.env.MOCK_RESPONSE)
 	{
-		const path = __dirname + "/mock4.json";
+		const path = __dirname + "/mock2.json";
 		let mockData = fs.readFileSync(path);
 		mockData = JSON.parse(mockData);
 

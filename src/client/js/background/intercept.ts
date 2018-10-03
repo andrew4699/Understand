@@ -34,7 +34,7 @@ export function onInterceptPDF(callback: InterceptCallback): void
     // Intercept web requests
     chrome.webRequest.onBeforeRequest.addListener(interceptRequest,
         {
-            urls: ["*://*/*"]
+            urls: ["*://*/*", "file://*/*"]
         },
         ['blocking']
     );

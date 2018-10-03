@@ -1,7 +1,7 @@
 import UnderstandAPI from "./lib/UnderstandAPI";
 import GUI from "./gui/core";
 import {ToastType, State as ToastState} from "./gui/components/toasts";
-import {objSize} from "./util";
+import {objSize, strToInt} from "./util";
 
 interface AppOptions
 {
@@ -69,9 +69,23 @@ interface DisplayMetrics
     size: Size;
 }
 
+interface PerPage<T>
+{
+    [page: number]: T;
+}
+
+interface PdfAddition
+{
+    loc: ImgData;
+    textInfo: ImgText;
+    el?: HTMLDivElement; 
+}
+
 type Position = [number, number]; // (x, y)
 type Size = [number, number]; // (height, width)
 type Scale = [number, number]; // (x-scale, y-scale)
+type Timer = number;
+type PDFFindController = any;
 
 const GUI_CONTAINER_ID = "understand-gui-container";
 const GUI_INIT_DELAY = 150;
@@ -84,9 +98,18 @@ export default class App
     private options: AppOptions;
     private imgData: ImgData[];
     private extraText: ExtraTextList;
+    
+    private textDivs: HTMLDivElement[][];
+    private textStrings: string[][];
+    private originalTextItems: number;
+    private findController: PDFFindController;
+
+    private cachedCanvas: PerPage<HTMLCanvasElement>;
+    private viewerScale: number;
+    private updateTimeout?: Timer;
+    private additions: PerPage<PdfAddition[]>;
 
     private processedImages: ProcessedImages;
-    private textData: PdfTextData;
     
     constructor(options: AppOptions)
     {
@@ -94,9 +117,14 @@ export default class App
         this.options = options;
         this.imgData = [];
         this.extraText = {};
+        this.cachedCanvas = {};
+        this.additions = {};
+        this.textDivs = [];
+        this.textStrings = [];
+        this.originalTextItems = 0;
+        this.viewerScale = 1;
 
         this.processedImages = {};
-        this.textData = {};
 
         setTimeout(this.initGUI.bind(this), GUI_INIT_DELAY);
     }
@@ -121,6 +149,89 @@ export default class App
         this.gui.setState(state);
     }
 
+    public onPdfUpdate(scale: number): void
+    {
+        if(this.viewerScale !== scale)
+        {
+            this.viewerScale = scale;
+            
+            if(this.updateTimeout)
+            {
+                clearTimeout(this.updateTimeout);
+            }
+
+            this.updateTimeout = setTimeout(() =>
+            {
+                this.updateTimeout = undefined;
+                this.cachedCanvas = {};
+                this.textDivs.length = this.originalTextItems;
+                this.textStrings.length = this.originalTextItems;
+                this.reinitializeDOM();
+            }, 1500);
+        }
+    }
+
+    private reinitializeDOM(): void
+    {
+        for(let pg in this.additions)
+        {
+            if(!this.additions[pg])
+            {
+                continue;
+            }
+
+            const pgNum = strToInt(pg);
+
+            for(let i = 0; i < this.additions[pg].length; i++)
+            {
+                this.initText(pgNum, i);
+                this.updateDOMElement(pgNum, i);
+            }
+        }
+    }
+
+    private updateDOMElement(page: number, idx: number): void
+    {
+        // Find canvas for the page
+        let canvas: HTMLCanvasElement | null = this.cachedCanvas[page];
+
+        if(!canvas)
+        {
+            canvas = document.getElementById("page" + page) as HTMLCanvasElement;
+            
+            if(!canvas)
+            {
+                throw new Error("");
+            }
+
+            this.cachedCanvas[page] = canvas;
+        }
+
+        if(!canvas.parentElement)
+        {
+            throw new Error("");
+        }
+
+        // Update DOM element
+        const {el, loc, textInfo} = this.additions[page][idx];
+        const {pos, size} = calculateTextDisplayMetrics(canvas, loc, textInfo, this.viewerScale);
+        console.log("metrics", pos, size, this.viewerScale);
+        
+        if(!el)
+        {
+            throw new Error("Attempted to update non-existing DOM element (page = " + page + ", idx = " + idx +  ")");
+        }
+
+        // Position
+        el.style.top = pos[1] + "px";
+        el.style.left = pos[0] + "px";
+
+        // Size
+        const scaleX = size[0] / el.clientWidth;
+        const scaleY = size[1] / el.clientHeight;
+        el.style.transform = "scaleX(" + scaleX + ") scaleY(" + scaleY + ")";
+    }
+
     public wasImageProcessed(img: string): boolean
     {
         return typeof this.processedImages[img] !== "undefined";
@@ -131,25 +242,34 @@ export default class App
         this.processedImages[img] = true;
     }
 
-    public setTextData(page: number, divs: HTMLElement[], strings: string[]): void
+    public setFindController(f: PDFFindController): void
     {
-        this.textData[page] = {divs, strings};
+        console.log("FIND CONTROLLER", f);
+        this.findController = f;
+    }
+
+    public setTextData(page: number, divs: HTMLDivElement[], strings: string[]): void
+    {
+        console.log("setTextData", divs, strings);
+        this.textDivs[page] = divs;
+        this.textStrings[page] = strings;
+        this.originalTextItems = divs.length;
     }
 
     // Middleware for getting the text content on a page
     // Used for adding custom text elements to the search
     public hookGetTextContent(page: number, content: any)
     {
-        if(typeof this.extraText[page] !== "undefined")
+        if(typeof this.additions[page] !== "undefined")
         {
-            this.extraText[page].forEach(function(e: ExtraText): void
+            this.additions[page].forEach((e: PdfAddition): void =>
             {
                 const cpy =
                 {
                     initialized: false,
-                    str: e.text,
-                    width: e.size[0],
-                    height: e.size[1],
+                    str: e.textInfo.text,
+                    width: e.loc.size[0] * this.viewerScale,
+                    height: e.loc.size[1] * this.viewerScale,
                     vertical: false,
                     lastAdvanceWidth: 0,
                     lastAdvanceHeight: 0,
@@ -166,15 +286,45 @@ export default class App
                 content.items.push(cpy);
             });
         }
-        
+
         return Promise.resolve(content);
+    }
+
+    // Creates the DOM element and appends the text string & div to the PDF viewer list
+    private initText(page: number, idx: number): void
+    {
+        const {loc, textInfo} = this.additions[page][idx];
+
+        // Create text element
+        const el = document.createElement("div");
+        el.innerText = textInfo.text;
+        
+        this.additions[page][idx].el = el;
+        
+        // Store in PDF viewer
+        this.textDivs[loc.page].push(el);
+        this.textStrings[loc.page].push(textInfo.text);
+
+        const textLayer = document.querySelector(`.page[data-page-number="${loc.page}"] .textLayer`);
+
+        if(!textLayer)
+        {
+            throw new Error("Text layer not found for page " + loc.page);
+        }
+        
+        const lastChildIdx = textLayer.children.length - 1;
+        textLayer.insertBefore(el, textLayer.children[lastChildIdx]);
+    }
+
+    private clearFindControllerCache(): void
+    {
+        this.findController.startedTextExtraction = false;
+        this.findController.dirtyMatch = true;
     }
 
     private registerText(loc: ImgData, textInfo: ImgText): void
     {
-        console.log("register", loc, textInfo, this.textData[loc.page]);
-        //const lastIdx = this.textData[page].divs.length - 1;
-        //const el = this.textData[page].divs[lastIdx].cloneNode(true) as HTMLElement;
+        console.log("register", loc, textInfo);
         const canvas: HTMLCanvasElement | null = document.getElementById("page" + loc.page) as HTMLCanvasElement | null;
 
         if(!canvas)
@@ -186,35 +336,34 @@ export default class App
         {
             throw new Error("");
         }
+        
+        // Add space to make phrases search-able
+        textInfo.text += " ";
 
-        const {pos, size} = calculateTextDisplayMetrics(canvas, loc, textInfo);
-        console.log("metrics", pos, size);
-
-        const el = document.createElement("div");
-        el.innerText = textInfo.text;
-        this.textData[loc.page].divs.push(el);
-
-        el.style.top = pos[1] + "px";
-        el.style.left = pos[0] + "px";
-
-        const textLayer = document.querySelector(`.page[data-page-number="${loc.page}"] .textLayer`);
-
-        if(!textLayer)
+        // Store this addition for later
+        const data: PdfAddition =
         {
-            throw new Error("Text layer not found for page " + loc.page);
+            loc,
+            textInfo,
+        };
+        
+        if(typeof this.additions[loc.page] === "undefined") // first addition on this page
+        {
+            this.additions[loc.page] = [];
         }
 
-        const lastChildIdx = textLayer.children.length - 1;
-        textLayer.insertBefore(el, textLayer.children[lastChildIdx]);
-
-        this.textData[loc.page].strings.push(textInfo.text);
-
-        if(typeof this.extraText[loc.page] === "undefined")
+        this.additions[loc.page].push(data);
+        
+        // Update search results
+        if(this.findController)
         {
-            this.extraText[loc.page] = [];
+            this.clearFindControllerCache();
         }
 
-        this.extraText[loc.page].push({size, text: textInfo.text});
+        const idx = this.additions[loc.page].length - 1;
+
+        this.initText(loc.page, idx);
+        this.updateDOMElement(loc.page, idx);
         this.checkFinished();
     }
 
@@ -230,7 +379,8 @@ export default class App
     // Begins the pipeline of converting the image to text
     public registerImage(img: Blob, page: number, pos: Position, size: Size, scale: Scale): void
     {
-        if(page > 1) return;
+        if(page > 1) return; // TODO: make sure to remove this
+
         if(size[0] > MIN_IMG_SIZE && size[1] > MIN_IMG_SIZE)
         {
             console.log(img);
@@ -262,7 +412,7 @@ export default class App
     }
 }
 
-function calculateTextDisplayMetrics(canvas: HTMLCanvasElement, loc: ImgData, textInfo: ImgText): DisplayMetrics
+function calculateTextDisplayMetrics(canvas: HTMLCanvasElement, loc: ImgData, textInfo: ImgText, viewerScale: number): DisplayMetrics
 {
     const dom = canvas.parentElement;
     
@@ -276,22 +426,22 @@ function calculateTextDisplayMetrics(canvas: HTMLCanvasElement, loc: ImgData, te
 
     const canvasImgOffset: Position =
     [
-        wRatio * loc.pos[0],
-        hRatio * loc.pos[1],
+        loc.pos[0],
+        loc.pos[1],
     ];
 
     const pos: Position =
     [
-        wRatio * (canvasImgOffset[0] + (textInfo.bounds[0].x / loc.scale[0])),
-        hRatio * (canvasImgOffset[1] + (textInfo.bounds[0].y / loc.scale[1]))
+        viewerScale * wRatio * (canvasImgOffset[0] + (textInfo.bounds[0].x / loc.scale[0])),
+        viewerScale * hRatio * (canvasImgOffset[1] + (textInfo.bounds[0].y / loc.scale[1])),
     ];
 
     //console.log("m", wRatio, canvasImgOffset[0], textInfo.bounds[0].x, loc.scale[0]);
 
     const size: Size =
     [
-        textInfo.bounds[2].x - textInfo.bounds[0].x,
-        textInfo.bounds[2].y - textInfo.bounds[0].y
+        viewerScale * (textInfo.bounds[2].x - textInfo.bounds[0].x),
+        viewerScale * (textInfo.bounds[2].y - textInfo.bounds[0].y),
     ];
 
     return {pos, size};

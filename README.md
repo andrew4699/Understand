@@ -5,13 +5,13 @@ Chrome extension for PDF optical character recognition
 
 # TODO
 ## Features
-* Proper search-highlighting positions
-* Add spaces after words that need it to be able to search for phrases
-* Reload controller pageContents when finished recognizing images
-* Understand local files
 * Offer to load normally (especially if there was an error)
 * Stitch all images into 1 to reduce # of API requests
 * PDF download progress
+* Loading indicators (when scaling & OCR-ing images)
+* Fix "All images processed indicator"
+* Improve highlight positioning
+* Understand local files (file://....) - ask user to select file using <input type="file">, alternative: native app (these 2 are necessary if they don't have "allow file URLs" checked for the extension)
 
 ## Developer Tooling
 * SCSS pre-processing
