@@ -1,4 +1,5 @@
 import urlIsPDF from "./util/urlIsPDF";
+import { URL_IGNORE_PARAM_KEY, URL_IGNORE_PARAM_VAL } from "../common/ignore_url";
 
 export declare type RedirectFunction = (url: string) => void;
 
@@ -14,7 +15,7 @@ export function onInterceptPDF(callback: InterceptCallback): void
         {
             if(request.type === "main_frame") // new page/site is loading in main window
             {
-                if(urlIsPDF(request.url))
+                if(urlIsPDF(request.url) && !isURLIgnored(request.url))
                 {
                     return {redirectUrl: callback(request.url)};
                 }
@@ -38,4 +39,10 @@ export function onInterceptPDF(callback: InterceptCallback): void
         },
         ['blocking']
     );
+}
+
+function isURLIgnored(url: string): boolean
+{
+    const urlData = new URL(url);
+    return urlData.searchParams.get(URL_IGNORE_PARAM_KEY) === URL_IGNORE_PARAM_VAL;
 }

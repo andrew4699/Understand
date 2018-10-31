@@ -2,6 +2,7 @@ import UnderstandAPI from "./lib/UnderstandAPI";
 import GUI from "./gui/core";
 import {ToastType, State as ToastState} from "./gui/components/toasts";
 import {objSize, strToInt} from "./util";
+import { URL_IGNORE_PARAM_KEY, URL_IGNORE_PARAM_VAL } from "../common/ignore_url";
 
 interface AppOptions
 {
@@ -81,6 +82,12 @@ interface PdfAddition
     el?: HTMLDivElement; 
 }
 
+interface PdfLoadingError
+{
+    name: string;
+    message: string;
+}
+
 type Position = [number, number]; // (x, y)
 type Size = [number, number]; // (height, width)
 type Scale = [number, number]; // (x-scale, y-scale)
@@ -145,8 +152,8 @@ export default class App
     private addToast(type: ToastType, body: string): void
     {
         const state = this.gui.getState() as ToastState;
-        state.toasts = state.toasts.concat({type, body});
-        this.gui.setState(state);
+        const toasts = state.toasts.concat({type, body});
+        this.gui.setState({toasts});
     }
 
     public onPdfUpdate(scale: number): void
@@ -364,7 +371,7 @@ export default class App
 
         this.initText(loc.page, idx);
         this.updateDOMElement(loc.page, idx);
-        this.checkFinished();
+        //this.checkFinished();
     }
 
     private checkFinished(): void
@@ -375,10 +382,28 @@ export default class App
         }
     }
 
+    // Set the "Ignore Understand" param and reload the URL
+    private loadNormally(): void
+    {
+        const pdfUrl = this.getPdfUrl();
+        const redirect = new URL(pdfUrl);
+        redirect.searchParams.set(URL_IGNORE_PARAM_KEY, URL_IGNORE_PARAM_VAL);
+        window.location.href = redirect.href;
+    }
+
+    // Called when the PDF viewer receives an error while loading
+    public onLoadingError(error: PdfLoadingError): void
+    {
+        this.gui.setActiveComponent("error");
+        this.gui.setState({error, loadNormally: this.loadNormally.bind(this)});
+
+    }
+
     // Called when the PDF viewer renders an image
     // Begins the pipeline of converting the image to text
     public registerImage(img: Blob, page: number, pos: Position, size: Size, scale: Scale): void
     {
+
         if(page > 1) return; // TODO: make sure to remove this
 
         if(size[0] > MIN_IMG_SIZE && size[1] > MIN_IMG_SIZE)

@@ -3,6 +3,7 @@ export declare type UpdateHandler = () => void;
 export declare interface Component<T extends Object>
 {
     onUpdate?(prevState: T): void;
+    postRender?(): void;
 }
 
 export abstract class Component<T extends Object>

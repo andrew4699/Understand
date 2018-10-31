@@ -1,5 +1,6 @@
 import {Component} from "./components/core";
 import {Toasts} from "./components/toasts";
+import {PdfError} from "./components/error";
 
 type GenericState = Object;
 
@@ -22,6 +23,7 @@ export default class GUI
         this.components =
         {
             "toasts": new Toasts(u),
+            "error": new PdfError(u),
         };
     }
 
@@ -63,5 +65,10 @@ export default class GUI
     {
         const html: string = this.activeComponent.toHTML();
         this.container.innerHTML = html;
+
+        if(this.activeComponent.postRender)
+        {
+            this.activeComponent.postRender();
+        }
     }
 }
