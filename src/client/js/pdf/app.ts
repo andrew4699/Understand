@@ -1,8 +1,10 @@
 import UnderstandAPI from "./lib/UnderstandAPI";
 import GUI from "./gui/core";
+import LoadingIndicator from "./gui/indep/LoadingIndicator";
 import {ToastType, State as ToastState} from "./gui/components/toasts";
 import {objSize, strToInt} from "./util";
 import { URL_IGNORE_PARAM_KEY, URL_IGNORE_PARAM_VAL } from "../common/ignore_url";
+import {Position, Size, Scale} from "./types/vectors";
 
 interface AppOptions
 {
@@ -22,6 +24,7 @@ interface ImgData
     size: Size;
     scale: Scale;
     text?: string;
+    loader: LoadingIndicator;
 }
 
 interface ExtraText
@@ -88,9 +91,6 @@ interface PdfLoadingError
     message: string;
 }
 
-type Position = [number, number]; // (x, y)
-type Size = [number, number]; // (height, width)
-type Scale = [number, number]; // (x-scale, y-scale)
 type Timer = number;
 type PDFFindController = any;
 
@@ -182,6 +182,7 @@ export default class App
     {
         for(let pg in this.additions)
         {
+            // Skip the page if it has no "additions"
             if(!this.additions[pg])
             {
                 continue;
@@ -197,27 +198,30 @@ export default class App
         }
     }
 
-    private updateDOMElement(page: number, idx: number): void
+    private getPageCanvas(page: number): HTMLCanvasElement
     {
-        // Find canvas for the page
-        let canvas: HTMLCanvasElement | null = this.cachedCanvas[page];
-
-        if(!canvas)
+        if(!this.cachedCanvas[page])
         {
-            canvas = document.getElementById("page" + page) as HTMLCanvasElement;
+            this.cachedCanvas[page] = document.getElementById("page" + page) as HTMLCanvasElement;
             
-            if(!canvas)
+            if(!this.cachedCanvas[page])
             {
                 throw new Error("");
             }
-
-            this.cachedCanvas[page] = canvas;
         }
-
-        if(!canvas.parentElement)
+        
+        if(!this.cachedCanvas[page].parentElement)
         {
             throw new Error("");
         }
+
+        return this.cachedCanvas[page];
+    }
+
+    private updateDOMElement(page: number, idx: number): void
+    {
+        // Find canvas for the page
+        const canvas = this.getPageCanvas(page);
 
         // Update DOM element
         const {el, loc, textInfo} = this.additions[page][idx];
@@ -403,15 +407,19 @@ export default class App
     // Begins the pipeline of converting the image to text
     public registerImage(img: Blob, page: number, pos: Position, size: Size, scale: Scale): void
     {
-
         if(page > 1) return; // TODO: make sure to remove this
 
         if(size[0] > MIN_IMG_SIZE && size[1] > MIN_IMG_SIZE)
         {
-            console.log(img);
+            // Loading indicator
+            const canvas = this.getPageCanvas(page);
+            const ratios = calculateCanvasDomScale(canvas);
+            const loader = new LoadingIndicator(page, pos, size, ratios);
+
+            // Store image and send "recognize" request
             const idx = this.api.recognize(img, this.onImageRecognized.bind(this));
-            this.imgData[idx] = {page: page, pos, size, scale};
-            console.log(img, page, pos, size, scale);
+            this.imgData[idx] = {page, pos, size, scale, loader};
+            console.log("registerImage", img, page, pos, size, scale);
         }
     }   
 
@@ -428,7 +436,8 @@ export default class App
                 //delete this.imgData[rid];
             }, 5000);
         });
-
+        
+        this.imgData[rid].loader.remove();
     }
 
     public getPdfUrl(): string
@@ -437,7 +446,7 @@ export default class App
     }
 }
 
-function calculateTextDisplayMetrics(canvas: HTMLCanvasElement, loc: ImgData, textInfo: ImgText, viewerScale: number): DisplayMetrics
+function calculateCanvasDomScale(canvas: HTMLCanvasElement): Scale
 {
     const dom = canvas.parentElement;
     
@@ -445,9 +454,16 @@ function calculateTextDisplayMetrics(canvas: HTMLCanvasElement, loc: ImgData, te
     {
         throw new Error("Canvas parentElement was null when calculating text display metrics");
     }
-    
+
     const wRatio = dom.clientWidth / canvas.width;
     const hRatio = dom.clientHeight / canvas.height;
+
+    return [wRatio, hRatio];
+}
+
+function calculateTextDisplayMetrics(canvas: HTMLCanvasElement, loc: ImgData, textInfo: ImgText, viewerScale: number): DisplayMetrics
+{
+    const ratios = calculateCanvasDomScale(canvas);
 
     const canvasImgOffset: Position =
     [
@@ -457,8 +473,8 @@ function calculateTextDisplayMetrics(canvas: HTMLCanvasElement, loc: ImgData, te
 
     const pos: Position =
     [
-        viewerScale * wRatio * (canvasImgOffset[0] + (textInfo.bounds[0].x / loc.scale[0])),
-        viewerScale * hRatio * (canvasImgOffset[1] + (textInfo.bounds[0].y / loc.scale[1])),
+        viewerScale * ratios[0] * (canvasImgOffset[0] + (textInfo.bounds[0].x / loc.scale[0])),
+        viewerScale * ratios[1] * (canvasImgOffset[1] + (textInfo.bounds[0].y / loc.scale[1])),
     ];
 
     //console.log("m", wRatio, canvasImgOffset[0], textInfo.bounds[0].x, loc.scale[0]);
